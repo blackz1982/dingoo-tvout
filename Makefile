@@ -1,6 +1,6 @@
 CC = mipsel-linux-gcc
 CFLAGS = -W -Wall -O2
-OBJS = tvout.o cpu.o
+OBJS = tvout.o
 
 all: tvout
 tvout: $(OBJS)

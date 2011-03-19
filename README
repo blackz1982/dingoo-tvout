@@ -1,29 +1,9 @@
-Tool and kernel patch to enable TV output on the Dingoo A-320 under Linux.
-
-=============================================================================
-WARNING: This tool changes the system clocks from userspace, which is a big
-no-no! (But kinda works for now...)  Generally, all manipulation of the
-system clocks should be done in the kernel, and only the kernel.  It seems,
-however, that its CPU scaling driver does not currently work.
-
-Therefore other tools (most notably gmenu2x) tamper with the clock generator
-as well, and they do it without regard to proper LCD and pixclock timing. 
-This will wreak havoc on the TV output and may cause the TV encoder to send
-rather disturbing signals to your TV.  Judging from the sounds my TV set
-makes in that case, I could imagine that this might be harmful.
-
-A workaround is to set the default frequency for gmenu2x to 336 MHz before
-enabling the TV output.  This will still cause it to set a higher LCD clock
-than necessary, but things will still work.  Of course, this does not fix
-other applications that manipulate the clocks, so beware! 
-=============================================================================
+Tool to enable TV output on the Dingoo A-320 under Linux.
 
 Requirements:
 - A Dingoo A-320.  If you are brave enough to try this on an A-330, please
   report whether it works.
-- A kernel with working I2C support.  You should be able to get a kernel
-  patch and a pre-built zImage for ILI9331 (the only display I have) at the
-  same place you got this from (http://github.com/uli/dingoo-tvout).
+- An OpenDingux kernel.
 
 Usage: tvout [OPTION...]
 

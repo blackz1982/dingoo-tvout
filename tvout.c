@@ -27,13 +27,7 @@
 
 #define FBIOA320TVOUT	0x46F0
 
-volatile unsigned int *lcd;
-unsigned int *lcdd;
-unsigned int *cpm;
-unsigned int *gpio;
-unsigned int *io;
 int fbd;
-int debug = 0;
 
 /* set a register on the Chrontel TV encoder */
 void i2c(int addr, int val)
@@ -176,32 +170,6 @@ void ctel_off(void)
 void map_io(void)
 {
   fbd = open("/dev/fb0", O_RDWR);
-  
-  int mem = open("/dev/mem", O_RDWR);
-  if (!mem) {
-    perror("/dev/mem");
-    exit(1);
-  }
-  lcd = mmap(0, 0x60, PROT_READ|PROT_WRITE, MAP_SHARED, mem, 0x13050000);
-  if (!lcd) {
-    perror("lcd");
-    exit(2);
-  }
-  cpm = mmap(0, 0x78, PROT_READ|PROT_WRITE, MAP_SHARED, mem, 0x10000000);
-  if (!cpm) {
-    perror("cpm");
-    exit(4);
-  }
-  gpio = mmap(0, 0x1000, PROT_READ|PROT_WRITE, MAP_SHARED, mem, 0x10010000);
-  if (!gpio) {
-    perror("gpio");
-    exit(5);
-  }
-  io = mmap(0, (64 << 20), PROT_READ|PROT_WRITE, MAP_SHARED, mem, 0x10000000);
-  if (!io) {
-    perror("io");
-    exit(6);
-  }
 }
 
 void lcdc_on(int pal)
@@ -222,7 +190,6 @@ int main(int argc, char **argv)
     if (!strcmp(argv[1], "--pal")) pal = 1;
     else if (!strcmp(argv[1], "--ntsc")) pal = 0;
     else if (!strcmp(argv[1], "--off")) tvon = 0;
-    else if (!strcmp(argv[1], "--debug")) debug = 1;
     else if (!strcmp(argv[1], "--help")) {
       fprintf(stderr,
         "Usage: tvout [OPTION...]\n"
@@ -230,7 +197,6 @@ int main(int argc, char **argv)
         "  --ntsc        output NTSC-M signal\n"
         "  --pal         output PAL-B/D/G/H/K/I signal\n"
         "  --off         turn off TV output and re-enable the SLCD\n"
-        "  --debug       print debug output to stderr\n"
         "  --help        display this help and exit\n");
       return 0;
     }
@@ -249,34 +215,9 @@ int main(int argc, char **argv)
     ctel_on(pal);
   }
   else {
-    if (!(lcd[0] & 0x80000000)) {
-      if (debug) fprintf(stderr,"SHUTTING DOWN!\n");
       lcdc_off();
-    }
   }
   
-  int i;
-
-  if (debug) for (i = 0; i < 0x60; i+=4) {
-    fprintf(stderr, "0x%x: 0x%x\n", 0x13050000 + i, lcd[i/4]);
-  }
-
-  if (debug) {
-    char addr[20], val[20], action[5];
-    for(;;) {
-      fscanf(stdin, "%s %s %s", action, addr, val);
-      unsigned int naddr = strtoul(addr, 0, 0) / 4;
-      unsigned int nval = strtoul(val, 0, 0);
-      if (action[0] == 'w') {
-        fprintf(stderr,"0x%08x = 0x%x\n", naddr*4 + 0x10000000, nval);
-        io[naddr] = nval;
-      }
-      else {
-        fprintf(stderr,"0x%08x: 0x%08x\n", naddr*4 + 0x10000000, io[naddr]);
-      }
-    }
-  }
-
   close(fbd);
   return 0;
 }

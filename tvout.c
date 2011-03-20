@@ -27,6 +27,9 @@
 
 #define FBIOA320TVOUT	0x46F0
 
+/* The non-negative values match the FBIOA320TVOUT argument values. */
+enum TVStandard { NONE = -1, OFF = 0, NTSC = 1, PAL50 = 2 };
+
 int fbd;
 
 /* set a register on the Chrontel TV encoder */
@@ -43,11 +46,11 @@ void i2c(int addr, int val)
    programs the TV encoder with.  Some of them sound patently absurd, but
    still work.
  */
-void ctel_on(int pal)
+void ctel_on(enum TVStandard tv)
 {
   i2c(4, 0xc1); /* Power State: disable DACs, power down */
 
-  if (pal)
+  if (tv == PAL50)
     i2c(0xa, 0x13);     /* Video Output Format: TV_BP = 0 (scaler on),
                            SVIDEO = 0 (composite output), DACSW = 01 (CVBS),
                            VOS = 0011 (PAL- B/D/G/H/K/I) */
@@ -72,7 +75,7 @@ void ctel_on(int pal)
      for NTSC, 864 for PAL) according to the datasheet.  We might want to
      try if simply turning on HVAUTO and skipping all this works, too...
    */
-  if (pal) {
+  if (tv == PAL50) {
     /* Input Timing: HVAUTO = 0 (timing from HTI, HAI),
        HTI (input horizontal total pixels) = 0x36c (876),
        HAI (input horizontal active pixels) = 0x140 (320)
@@ -104,7 +107,7 @@ void ctel_on(int pal)
    */
   i2c(0x17, 4);
   /* Input Timing Register 8 (0x18) defaults to 0xf0 */
-  if (pal)
+  if (tv == PAL50)
     i2c(0x19, 0x12);
   else
     i2c(0x19, 0x10);
@@ -117,7 +120,7 @@ void ctel_on(int pal)
   /* VP (vertical position) = 512, i.e. no adjustment;
      PCLK clock divider remains at default value (67108864).
    */
-  if (pal) {
+  if (tv == PAL50) {
     /* HP (horizontal position) = 503, i.e. adjust -9 pixels */
     i2c(0x23, 0x7a);
     /* UCLK clock divider: numerator 1932288... */
@@ -172,50 +175,41 @@ void map_io(void)
   fbd = open("/dev/fb0", O_RDWR);
 }
 
-void lcdc_on(int pal)
+void lcdc_set(enum TVStandard tv)
 {
-  ioctl(fbd, FBIOA320TVOUT, 1 + pal);
-}
-
-void lcdc_off(void)
-{
-  ioctl(fbd, FBIOA320TVOUT, 0);
+  ioctl(fbd, FBIOA320TVOUT, tv);
 }
 
 int main(int argc, char **argv)
 {
-  int tvon = 1;
-  int pal = 0;
+  enum TVStandard tv = NONE;
   for (; argc > 1; argc--, argv++) {
-    if (!strcmp(argv[1], "--pal")) pal = 1;
-    else if (!strcmp(argv[1], "--ntsc")) pal = 0;
-    else if (!strcmp(argv[1], "--off")) tvon = 0;
-    else if (!strcmp(argv[1], "--help")) {
-      fprintf(stderr,
-        "Usage: tvout [OPTION...]\n"
-        "\n"
-        "  --ntsc        output NTSC-M signal\n"
-        "  --pal         output PAL-B/D/G/H/K/I signal\n"
-        "  --off         turn off TV output and re-enable the SLCD\n"
-        "  --help        display this help and exit\n");
-      return 0;
-    }
+    if (!strcmp(argv[1], "--pal")) tv = PAL50;
+    else if (!strcmp(argv[1], "--ntsc")) tv = NTSC;
+    else if (!strcmp(argv[1], "--off")) tv = OFF;
+    else if (!strcmp(argv[1], "--help")) tv = NONE;
     else {
       fprintf(stderr, "Unknown option %s\n", argv[1]);
       return 1;
     }
   }
+  if (tv == NONE) {
+    fprintf(stderr,
+      "Usage: tvout [OPTION...]\n"
+      "\n"
+      "  --ntsc        output NTSC-M signal\n"
+      "  --pal         output PAL-B/D/G/H/K/I signal\n"
+      "  --off         turn off TV output and re-enable the SLCD\n"
+      "  --help        display this help and exit\n");
+    return 0;
+  }
 
   map_io();
 
   ctel_off();
-    
-  if (tvon) {
-    lcdc_on(pal);
-    ctel_on(pal);
-  }
-  else {
-      lcdc_off();
+  lcdc_set(tv);
+  if (tv != OFF) {
+    ctel_on(tv);
   }
   
   close(fbd);

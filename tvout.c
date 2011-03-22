@@ -24,20 +24,60 @@
 #include <stdlib.h>
 #include <sys/ioctl.h>
 #include <unistd.h>
+#include <linux/i2c.h>
+#include <linux/i2c-dev.h>
 
 #define FBIOA320TVOUT	0x46F0
 
 /* The non-negative values match the FBIOA320TVOUT argument values. */
 enum TVStandard { NONE = -1, OFF = 0, NTSC = 1, PAL50 = 2 };
 
-int fbd;
+static int fbd;
+static int i2cfd;
+
+static int i2c_open(void)
+{
+  i2cfd = open("/dev/i2c-0", O_RDWR);
+  if (!i2cfd) {
+    perror("Unable to open i2c dev file");
+    return -1;
+  }
+
+  if (ioctl(i2cfd, I2C_SLAVE, 0x76) < 0) {
+    perror("Unable to set slave address");
+    return -2;
+  }
+
+  return 0;
+}
+
+static int i2c_close(void)
+{
+  if (close(i2cfd) < 0) {
+    perror("Unable to close i2c dev file");
+    return -1;
+  }
+  return 0;
+}
 
 /* set a register on the Chrontel TV encoder */
-void i2c(int addr, int val)
+static int i2c(int addr, int val)
 {
-  char cmd[80];
-  sprintf(cmd, "i2cset -y i2c-gpio-1 0x76 0x%x 0x%x", addr, val);
-  system(cmd);
+  union i2c_smbus_data data;
+  struct i2c_smbus_ioctl_data args;
+
+  data.byte = val;
+  args.data = &data;
+  args.read_write = I2C_SMBUS_WRITE;
+  args.size = I2C_SMBUS_BYTE_DATA;
+  args.command = addr;
+
+  if (ioctl(i2cfd, I2C_SMBUS, &args) < 0) {
+    perror("Unable to write byte");
+    return -1;
+  }
+
+  return 0;
 }
 
 /* Enable the TV encoder.
@@ -48,6 +88,8 @@ void i2c(int addr, int val)
  */
 void ctel_on(enum TVStandard tv)
 {
+  i2c_open();
+
   i2c(4, 0xc1); /* Power State: disable DACs, power down */
 
   if (tv == PAL50)
@@ -163,11 +205,14 @@ void ctel_on(enum TVStandard tv)
 
   i2c(4, 0);	/* enable DACs, power up; FIXME: I think the first DAC is
                    enough for us. */
+  i2c_close();
 }
 
 void ctel_off(void)
 {
+  i2c_open();
   i2c(4, 0xc1);	/* disable DACs, power down */
+  i2c_close();
 }
 
 void map_io(void)

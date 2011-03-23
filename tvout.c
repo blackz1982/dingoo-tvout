@@ -218,11 +218,6 @@ void ctel_off(void)
   i2c_close();
 }
 
-void map_io(void)
-{
-  fbd = open("/dev/fb0", O_RDWR);
-}
-
 int lcdc_set(enum TVStandard tv)
 {
   int ret = ioctl(fbd, FBIOA320TVOUT, tv);
@@ -254,7 +249,7 @@ int main(int argc, char **argv)
     return 0;
   }
 
-  map_io();
+  fbd = open("/dev/fb0", O_RDWR);
 
   ctel_off();
   if (lcdc_set(tv) >= 0) {

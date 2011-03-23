@@ -88,6 +88,9 @@ static int i2c(int addr, int val)
  */
 void ctel_on(enum TVStandard tv)
 {
+  if (tv == OFF)
+    return;
+
   i2c_open();
 
   i2c(4, 0xc1); /* Power State: disable DACs, power down */
@@ -220,9 +223,11 @@ void map_io(void)
   fbd = open("/dev/fb0", O_RDWR);
 }
 
-void lcdc_set(enum TVStandard tv)
+int lcdc_set(enum TVStandard tv)
 {
-  ioctl(fbd, FBIOA320TVOUT, tv);
+  int ret = ioctl(fbd, FBIOA320TVOUT, tv);
+  if (ret < 0) perror("Failed to select TV-out mode");
+  return ret;
 }
 
 int main(int argc, char **argv)
@@ -252,8 +257,7 @@ int main(int argc, char **argv)
   map_io();
 
   ctel_off();
-  lcdc_set(tv);
-  if (tv != OFF) {
+  if (lcdc_set(tv) >= 0) {
     ctel_on(tv);
   }
   

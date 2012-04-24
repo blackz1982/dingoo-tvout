@@ -200,10 +200,6 @@ void ctel_on(enum TVStandard tv)
   /* FSCI Adjustment Register 1 defaults to 0 */
   i2c(0x33, 0);	/* FIXME: This actually is a default value, too. */
 
-  i2c(0x39, 0x12); /* FIXME: This looks completely bogus. I don't see it in
-                      any dumps, and it isn't even documented.  Should
-                      probably be removed. */
-
   i2c(0x63, 0xc2); /* SEL_R = 1 (double termination) */
 
   i2c(4, 0x08);	/* enable DAC0, power up */

@@ -206,8 +206,7 @@ void ctel_on(enum TVStandard tv)
 
   i2c(0x63, 0xc2); /* SEL_R = 1 (double termination) */
 
-  i2c(4, 0);	/* enable DACs, power up; FIXME: I think the first DAC is
-                   enough for us. */
+  i2c(4, 0x08);	/* enable DAC0, power up */
   i2c_close();
 }
 

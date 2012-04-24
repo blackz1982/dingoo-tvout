@@ -1,4 +1,4 @@
-/* 
+/*
  * Dingoo A-320 TV-Out Tool for Linux
  *
  * Copyright (c) 2010 Ulrich Hecht
@@ -138,14 +138,14 @@ void ctel_on(enum TVStandard tv)
     /* Input Timing Register 2 (0x12) defaults to 0x40 */
     i2c(0x13, 0xe0);
   }
-  
+
   /* HW (HSYNC pulse width) and HO (HSYNC offset) are left at their
      defaults (2 and 4, respectively)
    */
   /* Input Timing Register 4 (0x14) defaults to 0 */
   /* Input Timing Register 5 (0x15) defaults to 4 */
   /* Input Timing Register 6 (0x16) defaults to 2 */
-  
+
   /* VO (VSYNC offset) = 4,
      VTI (input vertical total pixels) = 530 (PAL), 528 (NTSC),
      VAI (input vertical active pixels) = 240
@@ -195,11 +195,11 @@ void ctel_on(enum TVStandard tv)
   /* PLL Ratio Register 1 defaults to 0x12, PLL1 and PLL2 pre-dividers = 2 */
   i2c(0x30, 0x12); /* PLL3 pre-divider and post-divider 1 = 2 */
   i2c(0x31, 0x13); /* PLL3 post-divider 2 = 3 */
-  
+
   /* FSCISPP (sub-carrier frequency adjustment) remains at 0 */
   /* FSCI Adjustment Register 1 defaults to 0 */
   i2c(0x33, 0);	/* FIXME: This actually is a default value, too. */
-  
+
   i2c(0x39, 0x12); /* FIXME: This looks completely bogus. I don't see it in
                       any dumps, and it isn't even documented.  Should
                       probably be removed. */
@@ -255,7 +255,7 @@ int main(int argc, char **argv)
   if (lcdc_set(tv) >= 0) {
     ctel_on(tv);
   }
-  
+
   close(fbd);
   return 0;
 }

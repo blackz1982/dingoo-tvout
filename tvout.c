@@ -93,7 +93,8 @@ void ctel_on(enum TVStandard tv)
 
   i2c_open();
 
-  i2c(4, 0xc1); /* Power State: disable DACs, power down */
+  i2c(3, 0x00); /* Reset everything; enters power-down state */
+  i2c(3, 0x03); /* Finish reset */
 
   if (tv == PAL50)
     i2c(0xa, 0x13);     /* Video Output Format: TV_BP = 0 (scaler on),

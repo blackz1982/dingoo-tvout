@@ -31,7 +31,7 @@
 
 /* The non-negative values match the FBIOA320TVOUT argument values. */
 enum TVStandard {
-	NONE = -1, OFF = 0, NTSC = 1, PAL50 = 2, PAL60 = 3, PAL_M = 4,
+	NONE = -1, OFF = 0, NTSC = 1, PAL_50 = 2, PAL_60 = 3, PAL_M = 4,
 };
 
 static int fbd;
@@ -98,11 +98,11 @@ void ctel_on(enum TVStandard tv)
   i2c(3, 0x00); /* Reset everything; enters power-down state */
   i2c(3, 0x03); /* Finish reset */
 
-  if (tv == PAL50) {
+  if (tv == PAL_50) {
     i2c(0xa, 0x13);     /* Video Output Format: TV_BP = 0 (scaler on),
                            SVIDEO = 0 (composite output), DACSW = 01 (CVBS),
                            VOS = 0011 (PAL- B/D/G/H/K/I) */
-  } else if (tv == PAL60) {
+  } else if (tv == PAL_60) {
     i2c(0xa, 0x17); /* same as above, except VOS = 0111 (PAL-60) */
   } else if (tv == PAL_M) {
     i2c(0xa, 0x14); /* same as above, except VOS = 0100 (PAL-M) */
@@ -128,7 +128,7 @@ void ctel_on(enum TVStandard tv)
      for NTSC, 864 for PAL) according to the datasheet.  We might want to
      try if simply turning on HVAUTO and skipping all this works, too...
    */
-  if (tv == PAL50) {
+  if (tv == PAL_50) {
     /* Input Timing: HVAUTO = 0 (timing from HTI, HAI),
        HTI (input horizontal total pixels) = 0x36c (876),
        HAI (input horizontal active pixels) = 0x140 (320)
@@ -159,7 +159,7 @@ void ctel_on(enum TVStandard tv)
    */
   i2c(0x17, 4);
   /* Input Timing Register 8 (0x18) defaults to 0xf0 */
-  if (tv == PAL50) {
+  if (tv == PAL_50) {
     i2c(0x19, 0x12);
   } else {
     i2c(0x19, 0x10);
@@ -173,7 +173,7 @@ void ctel_on(enum TVStandard tv)
   /* VP (vertical position) = 512, i.e. no adjustment;
      PCLK clock divider remains at default value (67108864).
    */
-  if (tv == PAL50) {
+  if (tv == PAL_50) {
     /* HP (horizontal position) = 503, i.e. adjust -9 pixels */
     i2c(0x23, 0x7a);
     /* UCLK clock divider: numerator 1932288... */
@@ -231,9 +231,9 @@ int main(int argc, char **argv)
 {
   enum TVStandard tv = NONE;
   for (; argc > 1; argc--, argv++) {
-    if (!strcmp(argv[1], "--pal")) tv = PAL50;
+    if (!strcmp(argv[1], "--pal")) tv = PAL_50;
     else if (!strcmp(argv[1], "--pal-m")) tv = PAL_M;
-    else if (!strcmp(argv[1], "--pal60")) tv = PAL60;
+    else if (!strcmp(argv[1], "--pal-60")) tv = PAL_60;
     else if (!strcmp(argv[1], "--ntsc")) tv = NTSC;
     else if (!strcmp(argv[1], "--off")) tv = OFF;
     else if (!strcmp(argv[1], "--help")) tv = NONE;
@@ -249,7 +249,7 @@ int main(int argc, char **argv)
       "  --ntsc        output NTSC-M signal\n"
       "  --pal         output PAL-B/D/G/H/K/I signal\n"
       "  --pal-m       output PAL-M signal\n"
-      "  --pal60       output PAL-encoded signal at 60 Hz\n"
+      "  --pal-60      output PAL-encoded signal at 60 Hz\n"
       "  --off         turn off TV output and re-enable the SLCD\n"
       "  --help        display this help and exit\n");
     return 0;

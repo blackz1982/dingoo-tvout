@@ -30,7 +30,9 @@
 #define FBIOA320TVOUT	0x46F0
 
 /* The non-negative values match the FBIOA320TVOUT argument values. */
-enum TVStandard { NONE = -1, OFF = 0, NTSC = 1, PAL50 = 2, PAL60 = 3 };
+enum TVStandard {
+	NONE = -1, OFF = 0, NTSC = 1, PAL50 = 2, PAL60 = 3, PAL_M = 4,
+};
 
 static int fbd;
 static int i2cfd;
@@ -102,6 +104,8 @@ void ctel_on(enum TVStandard tv)
                            VOS = 0011 (PAL- B/D/G/H/K/I) */
   } else if (tv == PAL60) {
     i2c(0xa, 0x17); /* same as above, except VOS = 0111 (PAL-60) */
+  } else if (tv == PAL_M) {
+    i2c(0xa, 0x14); /* same as above, except VOS = 0100 (PAL-M) */
   } else {
     i2c(0xa, 0x10); /* same as above, except VOS = 0000 (NTSC-M) */
   }
@@ -228,6 +232,7 @@ int main(int argc, char **argv)
   enum TVStandard tv = NONE;
   for (; argc > 1; argc--, argv++) {
     if (!strcmp(argv[1], "--pal")) tv = PAL50;
+    else if (!strcmp(argv[1], "--pal-m")) tv = PAL_M;
     else if (!strcmp(argv[1], "--pal60")) tv = PAL60;
     else if (!strcmp(argv[1], "--ntsc")) tv = NTSC;
     else if (!strcmp(argv[1], "--off")) tv = OFF;
@@ -243,6 +248,7 @@ int main(int argc, char **argv)
       "\n"
       "  --ntsc        output NTSC-M signal\n"
       "  --pal         output PAL-B/D/G/H/K/I signal\n"
+      "  --pal-m       output PAL-M signal\n"
       "  --pal60       output PAL-encoded signal at 60 Hz\n"
       "  --off         turn off TV output and re-enable the SLCD\n"
       "  --help        display this help and exit\n");

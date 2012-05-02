@@ -155,10 +155,10 @@ void ctel_on(enum TVStandard tv)
 
   /* VO (VSYNC offset) = 4,
      VTI (input vertical total pixels) = 548 (PAL), 544 (NTSC/PAL-60),
-     VAI (input vertical active pixels) = 240
+     VAI (input vertical active pixels) = 242
    */
   i2c(0x17, 4);
-  /* Input Timing Register 8 (0x18) defaults to 0xf0 */
+  i2c(0x18, 0xf2);
   if (tv == PAL_50) {
     i2c(0x19, 0x12);
   } else {

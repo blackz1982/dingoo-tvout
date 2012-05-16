@@ -19,6 +19,7 @@
 
 #include <stdio.h>
 #include <sys/mman.h>
+#include <errno.h>
 #include <fcntl.h>
 #include <string.h>
 #include <stdlib.h>
@@ -27,14 +28,15 @@
 #include <linux/i2c.h>
 #include <linux/i2c-dev.h>
 
-#define FBIOA320TVOUT	0x46F0
 
-/* The non-negative values match the FBIOA320TVOUT argument values. */
-enum TVStandard {
+/* The non-negative values match the tvNormName values. */
+enum TVNorm {
 	NONE = -1, OFF = 0, NTSC = 1, PAL_50 = 2, PAL_60 = 3, PAL_M = 4,
 };
+static const char *tvNormName[] = {
+	"off", "ntsc", "pal", "pal-60", "pal-m"
+};
 
-static int fbd;
 static int i2cfd;
 
 static int i2c_open(void)
@@ -88,7 +90,7 @@ static int i2c(int addr, int val)
    programs the TV encoder with.  Some of them sound patently absurd, but
    still work.
  */
-void ctel_on(enum TVStandard tv)
+void ctel_on(enum TVNorm tv)
 {
   if (tv == OFF)
     return;
@@ -220,16 +222,27 @@ void ctel_off(void)
   i2c_close();
 }
 
-int lcdc_set(enum TVStandard tv)
+int lcdc_set(enum TVNorm tv)
 {
-  int ret = ioctl(fbd, FBIOA320TVOUT, tv);
-  if (ret < 0) perror("Failed to select TV-out mode");
+  int fd = open("/sys/devices/platform/jz4740-fb/tv_out", O_WRONLY);
+  int ret = 0;
+  if (fd < 0) {
+    ret = errno;
+    perror("Failed to open TV-out mode sysfs pseudo-file");
+  } else {
+    const char *norm = tvNormName[tv];
+    if (write(fd, norm, strlen(norm)) < 0) {
+      ret = errno;
+      perror("Failed to select TV-out mode");
+    }
+    close(fd);
+  }
   return ret;
 }
 
 int main(int argc, char **argv)
 {
-  enum TVStandard tv = NONE;
+  enum TVNorm tv = NONE;
   for (; argc > 1; argc--, argv++) {
     if (!strcmp(argv[1], "--pal")) tv = PAL_50;
     else if (!strcmp(argv[1], "--pal-m")) tv = PAL_M;
@@ -255,13 +268,10 @@ int main(int argc, char **argv)
     return 0;
   }
 
-  fbd = open("/dev/fb0", O_RDWR);
-
   ctel_off();
   if (lcdc_set(tv) >= 0) {
     ctel_on(tv);
   }
 
-  close(fbd);
   return 0;
 }
